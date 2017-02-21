@@ -1,0 +1,31 @@
+GENERATE TRAINING DATASET
+data_aug.m
+generate_test.m
+generate_train.m
+
+
+
+F:\caffe-windows\examples\DRLSR
+
+DRLSR_clip_mat_inception_v2.prototxt -> for matlab
+DRLSR_clip_net_inception_v2.prototxt -> network setup
+DRLSR_clip_solver_inception_v2.prototxt -> environment setup
+
+
+to run the network training
+F:\caffe-windows>caffe train -solver examples\DRLSR\DRLSR_clip_solver_final_v2.prototxt
+
+
+to continue from certain snapshot
+F:\caffe-windows>caffe train -solver examples\DRLSR\DRLSR_clip_solver_final_v2.prototxt -snapshot examples\DRLSR\DRLSR_v2_tuning_iter_198.solverstate
+
+
+
+To save model to MATLAB format
+saveFiltersDRLSRinception.m
+
+
+
+To run testing stage
+F:\caffe-windows\examples\DRLSR\Testing_stage
+demo_DRLSR.m
