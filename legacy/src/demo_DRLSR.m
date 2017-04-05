@@ -36,7 +36,7 @@ fsim_drlsr = zeros(length(filepaths),1);
 % fsim_srcnn = zeros(length(filepaths),1);
 
 for i = 1 : length(filepaths)
-   
+
     %% read ground truth image
     [add,imname,type] = fileparts(filepaths(i).name);
     im = imread([testfolder imname type]);
@@ -54,24 +54,24 @@ for i = 1 : length(filepaths)
     tic
     im_b = imresize(im_l, up_scale, 'bicubic');
     t_bic=toc;
-    
+
     %% DRLSR
     tic
     %[im_drl,layerout] = DRLSR3x_inception_v3(model, im_b);
     [im_drl,layerout] = DRLSR3x_inception(model, im_b);
     %[im_drl,layerout] = DRLSR3x(model, im_b);
     t_drlsr=toc;
-    
+
 %      %% FSRCNNs
 %      tic
 %      im_fsrs = FSRCNN(modelFSRCNNs, im_l, up_scale);
 %      t_fsrs=toc;
-%      
+%
 %       %% FSRCNN
 %      tic
 %      im_fsr = FSRCNN(modelFSRCNN, im_l, up_scale);
 %      t_fsr=toc;
-%      
+%
 %       %% SRCNN
 %      tic
 %      im_srcnn = SRCNN(modelSRCNN, im_b);
@@ -80,12 +80,12 @@ for i = 1 : length(filepaths)
     %% remove border
     im_drl = shave(uint8(im_drl * 255), [up_scale, up_scale]);
 %     im_fsr = shave_x3(uint8(im_fsr * 255), [up_scale, up_scale]);
-%     im_fsrs = shave_x3(uint8(im_fsrs * 255), [up_scale, up_scale]); 
+%     im_fsrs = shave_x3(uint8(im_fsrs * 255), [up_scale, up_scale]);
 %     im_srcnn = shave(uint8(im_srcnn * 255), [up_scale, up_scale]);
     im_gnd = shave(uint8(im_gnd * 255), [up_scale, up_scale]);
     im_b = shave(uint8(im_b * 255), [up_scale, up_scale]);
-    
-    
+
+
     %% compute time
     tt_bic(i) = t_bic;
     tt_drlsr(i) = t_drlsr+t_bic;
@@ -99,39 +99,39 @@ for i = 1 : length(filepaths)
 %     psnr_fsrcnn(i) = compute_psnr(im_gnd,im_fsr);
 %     psnr_fsrcnns(i) = compute_psnr(im_gnd,im_fsrs);
 %     psnr_srcnn(i) = compute_psnr(im_gnd,im_srcnn);
-    
+
     %% compute FSIM
     fsim_bic(i) = FeatureSIM(im_gnd,im_b);
     fsim_drlsr(i) = FeatureSIM(im_gnd,im_drl);
 %     fsim_fsrcnn(i) = FeatureSIM(im_gnd,im_fsr);
 %     fsim_fsrcnns(i) = FeatureSIM(im_gnd,im_fsrs);
 %     fsim_srcnn(i) = FeatureSIM(im_gnd,im_srcnn);
-     
+
      %% compute SSIM
      ssim_bic(i) = ssim_index(im_gnd,im_b);
     ssim_drlsr(i) = ssim_index(im_gnd,im_drl);
 %     ssim_fsrcnn(i) = ssim_index(im_gnd,im_fsr);
 %     ssim_fsrcnns(i) = ssim_index(im_gnd,im_fsrs);
 %     ssim_srcnn(i) = ssim_index(im_gnd,im_srcnn);
-    
+
      [aa,bb,cc]=size(im_drl);
-    
+
     im_h_drl=imresize(im_ycbcr,[aa bb],'bicubic');
     im_h_drl(:,:,1)=im_drl;
     im_h_drl=ycbcr2rgb(im_h_drl);
-    
+
 %     im_h_fsr=imresize(im_ycbcr,[aa bb],'bicubic');
 %     im_h_fsr(:,:,1)=im_fsr;
 %     im_h_fsr=ycbcr2rgb(im_h_fsr);
-%     
+%
 %     im_h_fsrs=imresize(im_ycbcr,[aa bb],'bicubic');
 %     im_h_fsrs(:,:,1)=im_fsrs;
 %     im_h_fsrs=ycbcr2rgb(im_h_fsrs);
-%     
+%
 %     im_h_srcnn=imresize(im_ycbcr,[aa bb],'bicubic');
 %     im_h_srcnn(:,:,1)=im_srcnn;
 %     im_h_srcnn=ycbcr2rgb(im_h_srcnn);
-%     
+%
     im_b_final=imresize(im_ycbcr,[aa bb],'bicubic');
     im_b_final(:,:,1)=im_b;
     im_b_final=ycbcr2rgb(im_b_final);

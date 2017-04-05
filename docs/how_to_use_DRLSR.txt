@@ -29,3 +29,57 @@ saveFiltersDRLSRinception.m
 To run testing stage
 F:\caffe-windows\examples\DRLSR\Testing_stage
 demo_DRLSR.m
+
+雑魚のようなメモ
+
+caffe 一連の流れ
+0 前処理
+data augumentation
+normalize
+
+haris' file data_aug.m
+
+1 データセット用意
+training and test
+haris' file generate_test.m generate_train.m
+
+2 データベース作成
+haris' file generate_test.m generate_train.m
+
+3 prototxt の用意
+haris' file brabrabra.prototxt
+
+generate_testのところ
+
+画像リストを読み込み
+
+各画像に対して
+画像読み込み
+RGB -> YCbCr
+画像を倍精度に かつ Y成分のみを抽出
+
+modcrop
+画像のサイズを取得
+その画像サイズをscaleでmod計算する つまり余りを出す
+size_new = size - mod(size, scale)
+新しいサイズに画像を切り抜く
+これを画像ラベルとする？
+
+画像ラベルの縦横を保存
+
+入力画像をスケール分の1に縮小(bicubic)、さらにもとの縦横に戻す
+これを入力画像にする
+
+1からストライドずつ(高-入力サイズ＋１)までx
+1からストライドずつ(幅-入力サイズ＋１)までy
+入力画像を(x:x+size-1,y+size-1)で切り抜く
+ラベルも同様
+
+カウント上昇
+データ配列に加える
+ラベル配列二加える
+
+ループ終了
+
+ランダム順列生成
+画像データをランダムに並べ替え
