@@ -21,9 +21,31 @@ class DRLSR(Chain):
             conv3_9 = L.Convolution2D(16, 8, ksize=9, stride=1, pad=4, bias=0),
             conv4 = L.Convolution2D(24, 1, ksize=1, stride=1, pad=0, bias=0)
         )
+        self.train = False
 
-    def __call__(self, x, y):
-        pass
+    def __call__(self, x, t):
+        #forward network
+        #inception layer 1
+        h = F.concat((F.relu(self.conv1_3(x)), \
+                      F.relu(self.conv1_5(x)), \
+                      F.relu(self.conv1_9(x))), axis=1)
+        h = F.relu(self.conv2(h))
+        h = F.relu(self.conv22(h))
+        h = F.relu(self.conv23(h))
+        #inception layer 2
+        h = F.concat((F.relu(self.conv3_3(h)), \
+                      F.relu(self.conv3_5(h)), \
+                      F.relu(self.conv3_9(h))), axis=1)
+        h = F.relu(self.conv4(h))
+        h = h + x
+
+        if self.train:
+            #Training Phase
+            self.loss = F.mean_squared_error(x, t)
+            self.acc = F.accuracy(x, t)
+            return self.loss
+        else:
+            return h
 
     def forward(self, x):
         pass
