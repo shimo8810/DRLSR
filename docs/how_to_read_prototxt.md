@@ -25,7 +25,6 @@ hdf5_data_param HDF5（階層的データをまとめたファイル形式）の
 include この層がネットにいつ（どの状態stateで）取り込まれるかの指定
 convolution_param ConvolutionParameter（下記）の値
 
-```
 enum LayerType {
   NONE = 0;
   ABSVAL = 35;
@@ -66,10 +65,7 @@ enum LayerType {
   WINDOW_DATA = 24;
   THRESHOLD = 31;
 }
-```
 
-
-```
 optional uint32 num_output = 1; // The number of outputs for the layer
  optional bool bias_term = 2 [default = true]; // whether to have bias terms
  // Pad, kernel size, and stride are all given as a single value for equal
@@ -92,4 +88,3 @@ optional uint32 num_output = 1; // The number of outputs for the layer
    CUDNN = 2;
  }
  optional Engine engine = 15 [default = DEFAULT];
-```

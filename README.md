@@ -6,6 +6,9 @@ Hayato SHIMODAIRA, Muhammad HARIS, Hajime NOBUHARA.
 - [x] 論文を読む
 - [ ] 現環境のwin+caffe+matlabをlinux+tensorflow(or chainer)+python(and c++)に書き換える。無理なら頑張るしか無いよ
     - [ ] データセットの準備(HDF5?)
+        - [x] data argumentation
+        - [ ] HDF5化
+    - [ ] gradient clipping実装
     - [x] ネットワークの書き換え(Chainer)
     - [ ] ネットワークの書き換え(TensorFlow)
     - [ ] ハリスさんの再現実験

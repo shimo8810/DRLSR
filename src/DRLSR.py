@@ -3,13 +3,20 @@ import chainer
 from chainer import cuda, Function, gradient_check, \
                     Variable, optimizers, serializers, utils, \
                     Link, Chain, ChainList
+from chainer import training
 import chainer.functions as F
 import chainer.links as L
 
-class DRLSR(Chain):
-    """docstring forDRLSR."""
+import argparse
+import cv2
+
+class DRLSRNet(Chain):
+    """
+    DRLSR network
+    入力画像は(41, 41 ,1)の輝度情報画像
+    """
     def __init__(self):
-        super(DRLSR, self).__init__(
+        super(DRLSRNet, self).__init__(
             conv1_3 = L.Convolution2D(1, 8, ksize=3, stride=1, pad=1, bias=0),
             conv1_5 = L.Convolution2D(1, 8, ksize=5, stride=1, pad=2, bias=0),
             conv1_9 = L.Convolution2D(1, 8, ksize=9, stride=1, pad=4, bias=0),
@@ -52,4 +59,15 @@ class DRLSR(Chain):
 
 
 if __name__ == '__main__':
-    print("Training ...")
+    #メインで呼ばれるときは学習Phaseで
+    print("Training Phase ...")
+
+    #引数 読み込み GPU 情報のみ
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gpu', type=int, default=-1)
+    args = parser.parse_args()
+
+    #モデル読み込み
+    drlsr = DRLSRNet()
+    optimizer = optimizers.SGD()
+    optimizer.setup(drlsr)
