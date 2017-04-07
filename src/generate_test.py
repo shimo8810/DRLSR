@@ -17,8 +17,9 @@ image_paths = list()
 image_paths.append(image_path)
 
 #初期化
-data = np.zeros((SIZE_INPUT, SIZE_INPUT, 1, 1))
-label = np.zeros((SIZE_LABEL, SIZE_LABEL, 1, 1))
+data = np.zeros((1, 1, SIZE_INPUT, SIZE_INPUT))
+hoge = np.zeros(1)
+label = np.zeros((1, 1, SIZE_LABEL, SIZE_LABEL))
 padding = np.abs(SIZE_INPUT - SIZE_LABEL) / 2
 count = 0
 
@@ -27,6 +28,24 @@ for i in image_paths:
     #chainer ではfloat32を読み込むがmatlab版では倍精度に変換している
     image = cv2.imread(i).astype(np.float32)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)[:, :, 0]
-    print(image.shape)
-
+    #画像サイズの調整
+    size = np.array(image.shape)
+    size = size - size % SCALE
     #ラベル用画像
+    image_label = image[0:size[0], 0:size[1]]
+    height, width = image_label.shape
+
+    #中間縮小画像
+    buf = cv2.resize(image, (width//SCALE, height//SCALE), \
+                     interpolation=cv2.INTER_CUBIC)
+    #入力用画像
+    image_input = cv2.resize(buf, (width, height), \
+                             interpolation=cv2.INTER_CUBIC)
+
+    for x in range(0, height - SIZE_INPUT + 1, STRIDE):
+        for y in range(0, width - SIZE_INPUT + 1, STRIDE):
+            subim_input = image_input[x:x+SIZE_INPUT, y:y+SIZE_INPUT]
+            subim_label = image_label[x:x+SIZE_INPUT, y:y+SIZE_INPUT]
+
+            count += 1
+            print(subim_input[np.newaxis, :, :].shape)
