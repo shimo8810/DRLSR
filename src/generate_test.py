@@ -4,29 +4,34 @@
 import numpy as np
 import cv2
 import os
-
+import sys
 #parameter
 SIZE_INPUT = 41
 SIZE_LABEL = 41
 SCALE = 3
 STRIDE = 14
 
-#テストコード
-image_path = '../images/91_images_aug/t10_scale_10_angle_0.bmp'
-image_paths = list()
-image_paths.append(image_path)
+#path 情報
+image_path = '../images/91_images_aug/'
+image_paths = os.listdir(image_path)
 
 #初期化
-data = np.zeros((1, 1, SIZE_INPUT, SIZE_INPUT))
-hoge = np.zeros(1)
-label = np.zeros((1, 1, SIZE_LABEL, SIZE_LABEL))
+train = None
+label = None
 padding = np.abs(SIZE_INPUT - SIZE_LABEL) / 2
+
+#ループ情報
 count = 0
+length = len(image_paths)
 
 #データ生成
 for i in image_paths:
+    count += 1
+    sys.stdout.write("\r images :{}/{}, {}％".format(count, length, (count*100)//length))
+    sys.stdout.flush()
+
     #chainer ではfloat32を読み込むがmatlab版では倍精度に変換している
-    image = cv2.imread(i).astype(np.float32)
+    image = cv2.imread(image_path+i).astype(np.float32)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2YCR_CB)[:, :, 0]
     #画像サイズの調整
     size = np.array(image.shape)
@@ -42,10 +47,22 @@ for i in image_paths:
     image_input = cv2.resize(buf, (width, height), \
                              interpolation=cv2.INTER_CUBIC)
 
+    #各画像を入力サイズに切り分けていく
     for x in range(0, height - SIZE_INPUT + 1, STRIDE):
         for y in range(0, width - SIZE_INPUT + 1, STRIDE):
-            subim_input = image_input[x:x+SIZE_INPUT, y:y+SIZE_INPUT]
-            subim_label = image_label[x:x+SIZE_INPUT, y:y+SIZE_INPUT]
+            subim_input = image_input[np.newaxis, np.newaxis, x:x+SIZE_INPUT, y:y+SIZE_INPUT]
+            subim_label = image_label[np.newaxis, np.newaxis, x:x+SIZE_INPUT, y:y+SIZE_INPUT]
 
-            count += 1
-            print(subim_input[np.newaxis, :, :].shape)
+            #train, label配列にどんどんデータを追加
+            if train is None and label is None:
+                train =  subim_input
+                label = subim_label
+            else:
+                train = np.concatenate([train, subim_input], axis=0)
+                label = np.concatenate([label, subim_label], axis=0)
+
+    #データのシャッフル（不要？）
+np.save('../images/train_data.npy', train)
+np.save('../images/label_data.npy', label)
+print(train.shape)
+print("\nsaved data to npy")
