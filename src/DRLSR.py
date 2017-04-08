@@ -72,9 +72,6 @@ class DRLSRNet(Chain):
         if self.is_train:
             #Training Phase
             self.loss = F.mean_squared_error(h, t)
-            #print("loss",self.loss.data)
-            #self.acc = F.accuracy(x, t)
-            #print("acc", self.acc)
             chainer.report({'loss': self.loss}, self)
             return self.loss
         else:
@@ -98,20 +95,21 @@ if __name__ == '__main__':
     train_data = ImageDataset(is_train=True)
     test_data = ImageDataset(is_train=False)
     #Trianer準備
-    train_iter = chainer.iterators.SerialIterator(train_data, 5)
+    train_iter = chainer.iterators.SerialIterator(train_data, 6)
     test_iter = chainer.iterators.SerialIterator(test_data, 5, repeat=False, shuffle=False)
 
     #モデル読み込み
     drlsr = DRLSRNet()
     optimizer = optimizers.SGD()
     optimizer.setup(drlsr)
+    optimizer.add_hook(chainer.optimizer.GradientClipping(0.1))
 
     updater = training.StandardUpdater(train_iter, optimizer, device=0)
     trainer = training.Trainer(updater, (10, 'epoch'), out="result")
 
     trainer.extend(extensions.Evaluator(test_iter, drlsr, device=0))
     #trainer.extend(extensions.dump_graph('main/loss'))
-    trainer.extend(extensions.snapshot(), trigger=(1, 'epoch'))
+    #trainer.extend(extensions.snapshot(), trigger=(1, 'epoch'))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(
         ['epoch', 'main/loss', 'validation/main/loss']))
