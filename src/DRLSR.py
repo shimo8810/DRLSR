@@ -4,11 +4,30 @@ from chainer import cuda, Function, gradient_check, \
                     Variable, optimizers, serializers, utils, \
                     Link, Chain, ChainList
 from chainer import training
+from chainer import datasets
 import chainer.functions as F
 import chainer.links as L
-
 import argparse
 import cv2
+import sys
+import cv2
+import glob
+
+class ImageDataset(chainer.dataset.DatasetMixin):
+    """docstring forImageDataset."""
+    def __init__(self):
+        data_paths = glob.glob('../images/demo_train_dataset/*')
+        pairs = []
+        for path in data_paths:
+            pairs.append(np.load(path))
+        self.pairs = pairs
+
+    def __len__(self):
+        return len(self.pairs)
+
+    def get_example(self, i):
+        image_input, image_label = self.pairs[i]
+        return image_input, image_label
 
 class DRLSRNet(Chain):
     """
@@ -71,3 +90,6 @@ if __name__ == '__main__':
     drlsr = DRLSRNet()
     optimizer = optimizers.SGD()
     optimizer.setup(drlsr)
+
+    train_data = ImageDataset()
+    train_inter = chainer.iterators.SerialIterator(train, 1)

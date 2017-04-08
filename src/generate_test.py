@@ -23,10 +23,14 @@ padding = np.abs(SIZE_INPUT - SIZE_LABEL) / 2
 #ループ情報
 count = 0
 length = len(image_paths)
-
+im_no = 0
 #データ生成
 for i in image_paths:
     count += 1
+    #データ少なく
+    if count > 1:
+        break
+
     sys.stdout.write("\r images :{}/{}, {}％".format(count, length, (count*100)//length))
     sys.stdout.flush()
 
@@ -53,6 +57,12 @@ for i in image_paths:
             subim_input = image_input[np.newaxis, np.newaxis, x:x+SIZE_INPUT, y:y+SIZE_INPUT]
             subim_label = image_label[np.newaxis, np.newaxis, x:x+SIZE_INPUT, y:y+SIZE_INPUT]
 
+
+            #雑魚セクション
+            _data = np.concatenate([subim_input, subim_label], axis=0)
+            np.save('../images/demo_train_dataset/' + str(im_no) + '.npy', _data)
+            im_no += 1
+
             #train, label配列にどんどんデータを追加
             if train is None and label is None:
                 train =  subim_input
@@ -64,5 +74,5 @@ for i in image_paths:
     #データのシャッフル（不要？）
 np.save('../images/train_data.npy', train)
 np.save('../images/label_data.npy', label)
-print(train.shape)
+print("\n", train.shape)
 print("\nsaved data to npy")
