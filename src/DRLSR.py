@@ -68,12 +68,14 @@ class DRLSRNet(Chain):
 
         if self.train:
             #Training Phase
-            self.loss = F.mean_squared_error(x, t)
-            print("loss",self.loss.dtype)
-            self.acc = F.accuracy(x, t)
-            print("acc", self.acc)
+            self.loss = F.mean_squared_error(h, t)
+            #print("loss",self.loss.data)
+            #self.acc = F.accuracy(x, t)
+            #print("acc", self.acc)
+            chainer.report({'loss': self.loss}, self)
             return self.loss
         else:
+            print("not train")
             return h
 
     def forward(self, x):
@@ -101,15 +103,14 @@ if __name__ == '__main__':
     optimizer.setup(drlsr)
 
     updater = training.StandardUpdater(train_iter, optimizer, device=0)
-    trainer = training.Trainer(updater, (5, 'epoch'), out="result")
+    trainer = training.Trainer(updater, (2, 'epoch'), out="result")
 
     trainer.extend(extensions.Evaluator(test_iter, drlsr, device=0))
     #trainer.extend(extensions.dump_graph('main/loss'))
-    trainer.extend(extensions.snapshot(), trigger=(2, 'epoch'))
+    trainer.extend(extensions.snapshot(), trigger=(1, 'epoch'))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(
-        ['epoch', 'main/loss', 'validation/main/loss',
-        'main/accuracy', 'validation/main/accuracy']))
+        ['epoch', 'main/loss', 'validation/main/loss']))
     trainer.extend(extensions.ProgressBar())
     trainer.run()
 
