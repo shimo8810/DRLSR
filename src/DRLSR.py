@@ -16,8 +16,11 @@ import glob
 
 class ImageDataset(chainer.dataset.DatasetMixin):
     """docstring forImageDataset."""
-    def __init__(self):
-        data_paths = glob.glob('../images/demo_train_dataset/*')
+    def __init__(self, is_train=True):
+        if is_train:
+            data_paths = glob.glob('../images/demo_train_dataset/*')
+        else:
+            data_paths = glob.glob('../images/demo_test_dataset/*')
         data_list = []
         for path in data_paths:
             data_list.append(path)
@@ -48,7 +51,7 @@ class DRLSRNet(Chain):
             conv3_9 = L.Convolution2D(16, 8, ksize=9, stride=1, pad=4, bias=0),
             conv4 = L.Convolution2D(24, 1, ksize=1, stride=1, pad=0, bias=0)
         )
-        self.train = True
+        self.is_train = True
 
     def __call__(self, x, t):
         #forward network
@@ -66,7 +69,7 @@ class DRLSRNet(Chain):
         h = F.relu(self.conv4(h))
         h = h + x
 
-        if self.train:
+        if self.is_train:
             #Training Phase
             self.loss = F.mean_squared_error(h, t)
             #print("loss",self.loss.data)
@@ -92,10 +95,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     #データセット読み込み
-    train_data = ImageDataset()
+    train_data = ImageDataset(is_train=True)
+    test_data = ImageDataset(is_train=False)
     #Trianer準備
-    train_iter = chainer.iterators.SerialIterator(train_data, 1)
-    test_iter = chainer.iterators.SerialIterator(train_data, 1)
+    train_iter = chainer.iterators.SerialIterator(train_data, 5)
+    test_iter = chainer.iterators.SerialIterator(test_data, 5, repeat=False, shuffle=False)
 
     #モデル読み込み
     drlsr = DRLSRNet()
@@ -103,7 +107,7 @@ if __name__ == '__main__':
     optimizer.setup(drlsr)
 
     updater = training.StandardUpdater(train_iter, optimizer, device=0)
-    trainer = training.Trainer(updater, (2, 'epoch'), out="result")
+    trainer = training.Trainer(updater, (10, 'epoch'), out="result")
 
     trainer.extend(extensions.Evaluator(test_iter, drlsr, device=0))
     #trainer.extend(extensions.dump_graph('main/loss'))
@@ -111,7 +115,7 @@ if __name__ == '__main__':
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(
         ['epoch', 'main/loss', 'validation/main/loss']))
-    trainer.extend(extensions.ProgressBar())
+    trainer.extend(extensions.ProgressBar(update_interval=1))
     trainer.run()
 
     chainer.serializers.save_npz('model_final', drlsr)
