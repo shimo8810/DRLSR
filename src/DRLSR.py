@@ -5,6 +5,7 @@ from chainer import cuda, Function, gradient_check, \
                     Link, Chain, ChainList
 from chainer import training
 from chainer import datasets
+from chainer.training import extensions
 import chainer.functions as F
 import chainer.links as L
 import argparse
@@ -17,16 +18,16 @@ class ImageDataset(chainer.dataset.DatasetMixin):
     """docstring forImageDataset."""
     def __init__(self):
         data_paths = glob.glob('../images/demo_train_dataset/*')
-        pairs = []
+        data_list = []
         for path in data_paths:
-            pairs.append(np.load(path))
-        self.pairs = pairs
+            data_list.append(path)
+        self.data_list = data_list
 
     def __len__(self):
-        return len(self.pairs)
+        return len(self.data_list)
 
     def get_example(self, i):
-        image_input, image_label = self.pairs[i]
+        image_input, image_label = np.load(self.data_list[i])
         return image_input, image_label
 
 class DRLSRNet(Chain):
@@ -47,7 +48,7 @@ class DRLSRNet(Chain):
             conv3_9 = L.Convolution2D(16, 8, ksize=9, stride=1, pad=4, bias=0),
             conv4 = L.Convolution2D(24, 1, ksize=1, stride=1, pad=0, bias=0)
         )
-        self.train = False
+        self.train = True
 
     def __call__(self, x, t):
         #forward network
@@ -68,7 +69,9 @@ class DRLSRNet(Chain):
         if self.train:
             #Training Phase
             self.loss = F.mean_squared_error(x, t)
+            print("loss",self.loss.dtype)
             self.acc = F.accuracy(x, t)
+            print("acc", self.acc)
             return self.loss
         else:
             return h
@@ -86,10 +89,29 @@ if __name__ == '__main__':
     parser.add_argument('--gpu', type=int, default=-1)
     args = parser.parse_args()
 
+    #データセット読み込み
+    train_data = ImageDataset()
+    #Trianer準備
+    train_iter = chainer.iterators.SerialIterator(train_data, 1)
+    test_iter = chainer.iterators.SerialIterator(train_data, 1)
+
     #モデル読み込み
     drlsr = DRLSRNet()
     optimizer = optimizers.SGD()
     optimizer.setup(drlsr)
 
-    train_data = ImageDataset()
-    train_inter = chainer.iterators.SerialIterator(train, 1)
+    updater = training.StandardUpdater(train_iter, optimizer, device=0)
+    trainer = training.Trainer(updater, (5, 'epoch'), out="result")
+
+    trainer.extend(extensions.Evaluator(test_iter, drlsr, device=0))
+    #trainer.extend(extensions.dump_graph('main/loss'))
+    trainer.extend(extensions.snapshot(), trigger=(2, 'epoch'))
+    trainer.extend(extensions.LogReport())
+    trainer.extend(extensions.PrintReport(
+        ['epoch', 'main/loss', 'validation/main/loss',
+        'main/accuracy', 'validation/main/accuracy']))
+    trainer.extend(extensions.ProgressBar())
+    trainer.run()
+
+    chainer.serializers.save_npz('model_final', drlsr)
+chainer.serializers.save_npz('optimizer_final', optimizer)
