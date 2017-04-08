@@ -12,7 +12,7 @@ SCALE = 3
 STRIDE = 14
 
 #path 情報
-image_path = '../images/Set16/'
+image_path = '../images/91_images_aug/'
 image_paths = os.listdir(image_path)
 
 #初期化
@@ -60,7 +60,7 @@ for i in image_paths:
 
             #雑魚セクション
             _data = np.concatenate([subim_input, subim_label], axis=0)
-            np.save('../images/demo_test_dataset/' + str(im_no) + '.npy', _data)
+            np.save('../images/demo_train_dataset/' + str(im_no) + '.npy', _data)
             im_no += 1
 
             #train, label配列にどんどんデータを追加
@@ -72,7 +72,7 @@ for i in image_paths:
                 label = np.concatenate([label, subim_label], axis=0)
 
     #データのシャッフル（不要？）
-np.save('../images/test_data.npy', train)
-np.save('../images/testlavel_data.npy', label)
+np.save('../images/train_data.npy', train)
+np.save('../images/label_data.npy', label)
 print("\n", train.shape)
 print("\nsaved data to npy")
