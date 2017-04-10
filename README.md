@@ -14,6 +14,8 @@ Hayato SHIMODAIRA, Muhammad HARIS, Hajime NOBUHARA.
     - [x] 一般画像に対応するデモの作成
     - [x] ハリスさんの再現実験
 - [ ] 気になるところの改善 bagfix
+- [ ] 出力結果ファイル群の調整
+- [ ] 結果の改善（実験再現レベルまで）
 
 ## ディレクトリ構成
 - docs
