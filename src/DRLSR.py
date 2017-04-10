@@ -14,6 +14,11 @@ import sys
 import cv2
 import glob
 
+TRAIN_BATCH_SIZE = 64
+TEST_BATCH_SIZE = 2
+GRADIENT_CLIPPING = 0.1
+MAX_EPOCH = 100
+
 class ImageDataset(chainer.dataset.DatasetMixin):
     """docstring forImageDataset."""
     def __init__(self, is_train=True):
@@ -31,7 +36,7 @@ class ImageDataset(chainer.dataset.DatasetMixin):
 
     def get_example(self, i):
         image_input, image_label = np.load(self.data_list[i])
-        return image_input, image_label
+        return image_input/255.0, image_label/255.0
 
 class DRLSRNet(Chain):
     """
@@ -78,10 +83,6 @@ class DRLSRNet(Chain):
             print("not train")
             return h
 
-    def forward(self, x):
-        pass
-
-
 if __name__ == '__main__':
     #メインで呼ばれるときは学習Phaseで
     print("Training Phase ...")
@@ -91,30 +92,36 @@ if __name__ == '__main__':
     parser.add_argument('--gpu', type=int, default=-1)
     args = parser.parse_args()
 
+    #モデル読み込み
+    drlsr = DRLSRNet()
+    if args.gpu >= 0:
+        chainer.cuda.get_device(args.gpu).use()
+        drlsr.to_gpu()
+
     #データセット読み込み
     train_data = ImageDataset(is_train=True)
     test_data = ImageDataset(is_train=False)
     #Trianer準備
-    train_iter = chainer.iterators.SerialIterator(train_data, 6)
-    test_iter = chainer.iterators.SerialIterator(test_data, 5, repeat=False, shuffle=False)
+    train_iter = chainer.iterators.MultiprocessIterator(train_data, TRAIN_BATCH_SIZE)
+    test_iter = chainer.iterators.MultiprocessIterator(test_data, TEST_BATCH_SIZE, repeat=False, shuffle=False)
 
-    #モデル読み込み
-    drlsr = DRLSRNet()
+    #optimizer 準備
     optimizer = optimizers.SGD()
     optimizer.setup(drlsr)
-    optimizer.add_hook(chainer.optimizer.GradientClipping(0.1))
+    #optimizer.add_hook(chainer.optimizer.GradientClipping(GRADIENT_CLIPPING))
 
-    updater = training.StandardUpdater(train_iter, optimizer, device=0)
-    trainer = training.Trainer(updater, (10, 'epoch'), out="result")
-
-    trainer.extend(extensions.Evaluator(test_iter, drlsr, device=0))
-    #trainer.extend(extensions.dump_graph('main/loss'))
-    #trainer.extend(extensions.snapshot(), trigger=(1, 'epoch'))
+    #Trainer 準備
+    updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
+    #trainer = training.Trainer(updater, (MAX_EPOCH, 'epoch'), out="result")
+    trainer = training.Trainer(updater, (100, 'iteration'), out='result')
+    trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu))
+    trainer.extend(extensions.dump_graph('main/loss'))
+    trainer.extend(extensions.snapshot(), trigger=(1, 'iteration'))
     trainer.extend(extensions.LogReport())
-    trainer.extend(extensions.PrintReport(
-        ['epoch', 'main/loss', 'validation/main/loss']))
+    trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss']))
     trainer.extend(extensions.ProgressBar(update_interval=1))
+
     trainer.run()
 
-    chainer.serializers.save_npz('model_final', drlsr)
-chainer.serializers.save_npz('optimizer_final', optimizer)
+    chainer.serializers.save_npz('result/model_final', drlsr)
+    chainer.serializers.save_npz('result/optimizer_final', optimizer)
