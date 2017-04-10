@@ -90,3 +90,5 @@ ENV/
 
 # dataset
 images/
+
+src/result/
