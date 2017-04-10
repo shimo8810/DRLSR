@@ -41,7 +41,6 @@ class ImageDataset(chainer.dataset.DatasetMixin):
 class DRLSRNet(Chain):
     """
     DRLSR network
-    入力画像は(41, 41 ,1)の輝度情報画像
     """
     def __init__(self):
         super(DRLSRNet, self).__init__(
@@ -80,7 +79,7 @@ class DRLSRNet(Chain):
             chainer.report({'loss': self.loss}, self)
             return self.loss
         else:
-            print("not train")
+            print("SR Phase")
             return h
 
 if __name__ == '__main__':
@@ -112,11 +111,11 @@ if __name__ == '__main__':
 
     #Trainer 準備
     updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
-    #trainer = training.Trainer(updater, (MAX_EPOCH, 'epoch'), out="result")
-    trainer = training.Trainer(updater, (100, 'iteration'), out='result')
+    trainer = training.Trainer(updater, (MAX_EPOCH, 'epoch'), out="result")
+    #trainer = training.Trainer(updater, (100, 'iteration'), out='result')
     trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu))
     trainer.extend(extensions.dump_graph('main/loss'))
-    trainer.extend(extensions.snapshot(), trigger=(1, 'iteration'))
+    trainer.extend(extensions.snapshot(), trigger=(3, 'epoch'))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss']))
     trainer.extend(extensions.ProgressBar(update_interval=1))
