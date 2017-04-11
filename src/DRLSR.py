@@ -36,7 +36,9 @@ class ImageDataset(chainer.dataset.DatasetMixin):
 
     def get_example(self, i):
         image_input, image_label = np.load(self.data_list[i])
-        return image_input/255.0, image_label/255.0
+        image_input *= (1.0 / 255.0)
+        image_label *= (1.0 / 255.0)
+        return image_input, image_label
 
 class DRLSRNet(Chain):
     """
@@ -105,20 +107,22 @@ if __name__ == '__main__':
     test_iter = chainer.iterators.MultiprocessIterator(test_data, TEST_BATCH_SIZE, repeat=False, shuffle=False)
 
     #optimizer 準備
-    optimizer = optimizers.SGD()
+    optimizer = optimizers.MomentumSGD(lr=0.1, momentum=0.9)
     optimizer.setup(drlsr)
-    #optimizer.add_hook(chainer.optimizer.GradientClipping(GRADIENT_CLIPPING))
+    optimizer.add_hook(chainer.optimizer.GradientClipping(0.1))
+    optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
 
     #Trainer 準備
     updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
     trainer = training.Trainer(updater, (MAX_EPOCH, 'epoch'), out="result")
     #trainer = training.Trainer(updater, (100, 'iteration'), out='result')
-    trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu))
+    trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu), trigger=(10000, 'iteration'))
     trainer.extend(extensions.dump_graph('main/loss'))
-    trainer.extend(extensions.snapshot(), trigger=(3, 'epoch'))
-    trainer.extend(extensions.LogReport())
-    trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss']))
-    trainer.extend(extensions.ProgressBar(update_interval=1))
+    trainer.extend(extensions.snapshot(), trigger=(1000, 'iteration'))
+    trainer.extend(extensions.LogReport(trigger=(1000, 'iteration')))
+    trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss']), trigger=(10000, 'iteration'))
+    #trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss']))
+    trainer.extend(extensions.ProgressBar(update_interval=10))
 
     trainer.run()
 
