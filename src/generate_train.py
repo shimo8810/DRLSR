@@ -23,7 +23,6 @@ label = None
 padding = np.abs(SIZE_INPUT - SIZE_LABEL) / 2
 
 #ループ情報
-count = 0
 length = len(image_paths)
 im_no = 0
 #データ生成
@@ -40,7 +39,7 @@ def gen_train(i):
     image_label = image[0:size[0], 0:size[1]]
     height, width = image_label.shape
     #中間縮小画像
-    buf = cv2.resize(image, (width//SCALE, height//SCALE), \
+    buf = cv2.resize(image_label, (width//SCALE, height//SCALE), \
                      interpolation=cv2.INTER_CUBIC)
     #入力用画像
     image_input = cv2.resize(buf, (width, height), \
