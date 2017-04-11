@@ -92,3 +92,5 @@ ENV/
 images/
 
 src/result/
+
+_*.py
