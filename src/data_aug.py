@@ -6,9 +6,9 @@ import sys
 
 # 最初の91枚の画像をカサ増しする
 #91-iamgeのパス
-image_path = '../images/91_images/'
+image_path = '../images/General-100//'
 #保存用ディレクトリのパス
-save_path = '../images/91_images_aug/'
+save_path = '../images/general_100_images_aug/'
 image_names = os.listdir(image_path)
 
 length = len(image_names)
