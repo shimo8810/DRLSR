@@ -17,7 +17,8 @@ import glob
 TRAIN_BATCH_SIZE = 64
 TEST_BATCH_SIZE = 2
 GRADIENT_CLIPPING = 0.1
-MAX_EPOCH = 100
+MAX_EPOCH = 300000
+interval = 50000
 
 class ImageDataset(chainer.dataset.DatasetMixin):
     """docstring forImageDataset."""
@@ -36,8 +37,6 @@ class ImageDataset(chainer.dataset.DatasetMixin):
 
     def get_example(self, i):
         image_input, image_label = np.load(self.data_list[i])
-        image_input *= (1.0 / 255.0)
-        image_label *= (1.0 / 255.0)
         return image_input, image_label
 
 class DRLSRNet(Chain):
@@ -45,17 +44,18 @@ class DRLSRNet(Chain):
     DRLSR network
     """
     def __init__(self):
+        w_init = chainer.initializers.HeNormal()
         super(DRLSRNet, self).__init__(
-            conv1_3 = L.Convolution2D(1, 8, ksize=3, stride=1, pad=1, bias=0),
-            conv1_5 = L.Convolution2D(1, 8, ksize=5, stride=1, pad=2, bias=0),
-            conv1_9 = L.Convolution2D(1, 8, ksize=9, stride=1, pad=4, bias=0),
-            conv2 = L.Convolution2D(24, 16, ksize=1, stride=1, pad=0, bias=0),
-            conv22= L.Convolution2D(16, 16, ksize=3, stride=1, pad=1, bias=0),
-            conv23= L.Convolution2D(16, 16, ksize=1, stride=1, pad=0, bias=0),
-            conv3_3 = L.Convolution2D(16, 8, ksize=3, stride=1, pad=1, bias=0),
-            conv3_5 = L.Convolution2D(16, 8, ksize=5, stride=1, pad=2, bias=0),
-            conv3_9 = L.Convolution2D(16, 8, ksize=9, stride=1, pad=4, bias=0),
-            conv4 = L.Convolution2D(24, 1, ksize=1, stride=1, pad=0, bias=0)
+            conv1_3 = L.Convolution2D(1, 8, ksize=3, stride=1, pad=1, bias=0, initialW=w_init),
+            conv1_5 = L.Convolution2D(1, 8, ksize=5, stride=1, pad=2, bias=0, initialW=w_init),
+            conv1_9 = L.Convolution2D(1, 8, ksize=9, stride=1, pad=4, bias=0, initialW=w_init),
+            conv2 = L.Convolution2D(24, 16, ksize=1, stride=1, pad=0, bias=0, initialW=w_init),
+            conv22= L.Convolution2D(16, 16, ksize=3, stride=1, pad=1, bias=0, initialW=w_init),
+            conv23= L.Convolution2D(16, 16, ksize=1, stride=1, pad=0, bias=0, initialW=w_init),
+            conv3_3 = L.Convolution2D(16, 8, ksize=3, stride=1, pad=1, bias=0, initialW=w_init),
+            conv3_5 = L.Convolution2D(16, 8, ksize=5, stride=1, pad=2, bias=0, initialW=w_init),
+            conv3_9 = L.Convolution2D(16, 8, ksize=9, stride=1, pad=4, bias=0, initialW=w_init),
+            conv4 = L.Convolution2D(24, 1, ksize=1, stride=1, pad=0, bias=0, initialW=w_init)
         )
         self.is_train = True
 
@@ -91,6 +91,9 @@ if __name__ == '__main__':
     #引数 読み込み GPU 情報のみ
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=-1)
+    parser.add_argument('--snapshot', type=int, default=None)
+    parser.add_argument('--model', action='store_true', default=False)
+
     args = parser.parse_args()
 
     #モデル読み込み
@@ -115,16 +118,24 @@ if __name__ == '__main__':
     #Trainer 準備
     updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
     trainer = training.Trainer(updater, (MAX_EPOCH, 'epoch'), out="result")
-    #trainer = training.Trainer(updater, (100, 'iteration'), out='result')
-    trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu), trigger=(10000, 'iteration'))
+    trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu), trigger=(interval, 'iteration'))
+    trainer.extend(extensions.ExponentialShift('lr', 0.5), trigger=(116840, 'iteration'))
     trainer.extend(extensions.dump_graph('main/loss'))
-    trainer.extend(extensions.snapshot(), trigger=(1000, 'iteration'))
-    trainer.extend(extensions.LogReport(trigger=(1000, 'iteration')))
-    trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss']), trigger=(10000, 'iteration'))
-    #trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss']))
+    trainer.extend(extensions.snapshot(), trigger=(interval, 'iteration'))
+    trainer.extend(extensions.snapshot_object(drlsr, 'model_iter_{.updater.iteration}'), trigger=(interval, 'iteration'))
+    trainer.extend(extensions.snapshot_object(optimizer, 'opt_iter_{.updater.iteration}'), trigger=(interval, 'iteration'))
+    trainer.extend(extensions.LogReport(trigger=(interval, 'iteration')))
+    trainer.extend(extensions.observe_lr(), trigger=(interval, 'iteration'))
+    trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss', 'lr']), trigger=(interval, 'iteration'))
     trainer.extend(extensions.ProgressBar(update_interval=10))
 
+    if args.snapshot:
+        serializers.load_npz('./result/snapshot_iter_' +str(args.snapshot) , trainer)
+    if args.model:
+        serializers.load_npz('./result/model_final_test64.npz', drlsr)
+        serializers.load_npz('./result/optimizer_final_test64.npz', optimizer)
     trainer.run()
 
-    chainer.serializers.save_npz('result/model_final', drlsr)
-    chainer.serializers.save_npz('result/optimizer_final', optimizer)
+    chainer.serializers.save_npz('result/model_final.npz', drlsr)
+    chainer.serializers.save_npz('result/optimizer_final.npz', optimizer)
+    chainer.serializers.save_npz('result/trainer_final.npz', trainer)
