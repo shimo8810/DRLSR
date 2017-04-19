@@ -3,7 +3,12 @@
 Hayato SHIMODAIRA, Muhammad HARIS, Hajime NOBUHARA.
 
 ## ToDo
-- [x] 論文を読む
+- [ ] 論文を読む
+    - [x] ハリスさんの論文
+    - [ ] Image Super-Resolution Using Deep COnvolutional Networks.(SRCNN)
+    - [ ] Very Deep Convolutional Networks.(VDSR)
+    - [ ] inception concept , GoogleNet
+    - [ ] residual learning,
 - [x] 現環境のwin+caffe+matlabをlinux+tensorflow(or chainer)+python(or c++)に書き換え
     - [x] データセットの準備(HDF5?)
         - [x] data argumentation
