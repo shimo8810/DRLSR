@@ -1,5 +1,6 @@
 import numpy as np
 import chainer
+import os
 from chainer import cuda, Function, gradient_check, \
                     Variable, optimizers, serializers, utils, \
                     Link, Chain, ChainList
@@ -119,7 +120,7 @@ if __name__ == '__main__':
     updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
     trainer = training.Trainer(updater, (MAX_EPOCH, 'epoch'), out="result")
     trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu), trigger=(interval, 'iteration'))
-    trainer.extend(extensions.ExponentialShift('lr', 0.5), trigger=(116840, 'iteration'))
+    #trainer.extend(extensions.ExponentialShift('lr', 0.5), trigger=(116840, 'iteration'))
     trainer.extend(extensions.dump_graph('main/loss'))
     trainer.extend(extensions.snapshot(), trigger=(interval, 'iteration'))
     trainer.extend(extensions.snapshot_object(drlsr, 'model_iter_{.updater.iteration}'), trigger=(interval, 'iteration'))
