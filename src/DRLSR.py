@@ -19,7 +19,8 @@ TRAIN_BATCH_SIZE = 64
 TEST_BATCH_SIZE = 2
 GRADIENT_CLIPPING = 0.1
 MAX_EPOCH = 300000
-interval = 50000
+MAX_ITER = 300000
+interval =  10000
 
 class ImageDataset(chainer.dataset.DatasetMixin):
     """docstring forImageDataset."""
@@ -118,7 +119,7 @@ if __name__ == '__main__':
 
     #Trainer 準備
     updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
-    trainer = training.Trainer(updater, (MAX_EPOCH, 'epoch'), out="result")
+    trainer = training.Trainer(updater, (MAX_ITER, 'iteration'), out="result")
     trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu), trigger=(interval, 'iteration'))
     trainer.extend(extensions.dump_graph('main/loss'))
     trainer.extend(extensions.snapshot(), trigger=(interval, 'iteration'))
