@@ -15,10 +15,13 @@ import sys
 import cv2
 import glob
 
+#parameter
+#Train バッチサイズ
 TRAIN_BATCH_SIZE = 64
+#Test バッチサイズ
 TEST_BATCH_SIZE = 2
 GRADIENT_CLIPPING = 0.1
-MAX_EPOCH = 300000
+#MAX_EPOCH = 300000
 MAX_ITER = 300000
 interval =  10000
 
@@ -26,7 +29,7 @@ class ImageDataset(chainer.dataset.DatasetMixin):
     """docstring forImageDataset."""
     def __init__(self, is_train=True):
         if is_train:
-            data_paths = glob.glob('../images/demo_train_dataset/*')
+            data_paths = glob.glob('../images/general_train_dataset/*')
         else:
             data_paths = glob.glob('../images/demo_test_dataset/*')
         data_list = []
@@ -112,7 +115,7 @@ if __name__ == '__main__':
     test_iter = chainer.iterators.MultiprocessIterator(test_data, TEST_BATCH_SIZE, repeat=False, shuffle=False)
 
     #optimizer 準備
-    optimizer = optimizers.MomentumSGD(lr=0.1, momentum=0.9)
+    optimizer = optimizers.MomentumSGD(lr=1, momentum=0.9)
     optimizer.setup(drlsr)
     optimizer.add_hook(chainer.optimizer.GradientClipping(0.1))
     optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
@@ -133,10 +136,11 @@ if __name__ == '__main__':
     if args.snapshot:
         serializers.load_npz('./result/snapshot_iter_' +str(args.snapshot) , trainer)
     if args.model:
-        serializers.load_npz('./result/model_final_test64.npz', drlsr)
-        serializers.load_npz('./result/optimizer_final_test64.npz', optimizer)
+        serializers.load_npz('./result/model_firsttraining.npz', drlsr)
+        #serializers.load_npz('./result/optimizer_final_test64.npz', optimizer)
     trainer.run()
 
-    chainer.serializers.save_npz('result/model_final.npz', drlsr)
-    chainer.serializers.save_npz('result/optimizer_final.npz', optimizer)
-    chainer.serializers.save_npz('result/trainer_final.npz', trainer)
+    chainer.serializers.save_npz('result/model_finetuning.npz', drlsr)
+    #chainer.serializers.save_npz('result/optimizer_firsttraining.npz', optimizer)
+    #chainer.serializers.save_npz('result/trainer_firsttraining.npz', trainer)
+    print('complete')
