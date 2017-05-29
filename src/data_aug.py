@@ -3,14 +3,14 @@ import os
 import numpy as np
 import cv2
 import sys
+from os import path
 
 # 最初の91枚の画像をカサ増しする
 #91-iamgeのパス
-image_path = '../images/General-100//'
+image_path = '../images/General_100/'
 #保存用ディレクトリのパス
-save_path = '../images/general_100_images_aug/'
+save_path = '../images/general_100_aug/'
 image_names = os.listdir(image_path)
-
 length = len(image_names)
 count = 0
 for i in image_names:
@@ -25,19 +25,14 @@ for i in image_names:
         scale = scale * 0.1
         size = (int(image.shape[1]*scale), int(image.shape[0]*scale))
         scaled_image = cv2.resize(image, size, interpolation=cv2.INTER_CUBIC)
-        i1 = cv2.flip(scaled_image.transpose((1,0,2)), 0)
-        i2 = cv2.flip(scaled_image, -1)
-        i3 = cv2.flip(i1, -1)
-        cv2.imwrite(save_path + i.split(".")[0] +\
-                        "_scale_" + str(int(scale*10)) + \
-                        "_angle_90" + ".bmp", i1)
-        cv2.imwrite(save_path + i.split(".")[0] + \
-                        "_scale_" + str(int(scale*10)) + \
-                        "_angle_180" + ".bmp", i2)
-        cv2.imwrite(save_path + i.split(".")[0] +\
-                        "_scale_" + str(int(scale*10)) + \
-                        "_angle_270" + ".bmp", i3)
-        cv2.imwrite(save_path + i.split(".")[0] + \
-                        "_scale_" + str(int(scale*10)) + \
-                        "_angle_0" + ".bmp", scaled_image)
+        i_list = []
+        i_list.append(cv2.flip(scaled_image.transpose((1,0,2)), 0))
+        i_list.append(cv2.flip(scaled_image, -1))
+        i_list.append(cv2.flip(i_list[0], -1))
+        i_list.append(scaled_image)
+        angle_list = [90,180,270, 0]
+        for j in range(len(angle_list)):
+                buf_name = path.abspath(save_path + "{}_scale_{}_angle_{}.bmp".format(i.split(".")[0], int(scale*10), angle_list[j]))
+                hog = cv2.imwrite(buf_name, i_list[j])
+                print(hog)
 print("\ncomplete!")

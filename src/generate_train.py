@@ -14,7 +14,8 @@ SCALE = 3
 STRIDE = 14
 
 #path 情報
-image_path = '../images/91_images_aug/'
+#image_path = '../images/91_images_aug/'
+image_path = '../images/general_100_aug/'
 image_paths = os.listdir(image_path)
 
 #初期化
@@ -52,7 +53,7 @@ def gen_train(i):
 
             #雑魚セクション
             _data = np.concatenate([subim_input, subim_label], axis=0)
-            np.save('../images/demo_train_dataset/' + str(i.split('.')[0]) + '_' + str(c) + '.npy', _data)
+            np.save('../images/general_train_dataset/' + str(i.split('.')[0]) + '_' + str(c) + '.npy', _data)
             c += 1
 #並列処理
 Parallel(n_jobs=-1, verbose=5)([delayed(gen_train)(i) for i in image_paths])
