@@ -15,7 +15,7 @@ Hayato SHIMODAIRA, Muhammad HARIS, Hajime NOBUHARA.
         - [ ] HDF5化
     - [x] gradient clipping実装
     - [x] ネットワークの書き換え(Chainer)
-    - [ ] ネットワークの書き換え(TensorFlow)
+    - [x] ネットワークの書き換え(TensorFlow->Keras)
     - [x] 一般画像に対応するデモの作成
     - [x] ハリスさんの再現実験
 - [ ] 気になるところの改善 bagfix
