@@ -99,7 +99,12 @@ class DRLSRNet(Chain):
 
 if __name__ == '__main__':
     #メインで呼ばれるときは学習Phaseで
-
+    '''
+    gpu: 0->gpu, otherwise -> cpu
+    phase: 1 -> pre-training, otherwise -> fine-tuning
+    snapshot: スナップショットファイル
+    model: モデルファイル
+    '''
     #引数 読み込み
     #読み込む情報はgpu, 学習フェイズ,
     parser = argparse.ArgumentParser()
