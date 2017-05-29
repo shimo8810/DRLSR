@@ -27,11 +27,19 @@ interval =  10000
 
 class ImageDataset(chainer.dataset.DatasetMixin):
     """docstring forImageDataset."""
-    def __init__(self, is_train=True):
-        if is_train:
+    def __init__(self, data_set_type='training'):
+        '''
+        training : pre-training用の画像セット
+        tuning : fine-tuning用の画像セット
+        test : テスト用の画像セット
+        '''
+        if 'training' == data_set_type:
+            data_paths = glob.glob('../images/demo_train_dataset/*')
+        elif 'tuning' == data_set_type:
             data_paths = glob.glob('../images/general_train_dataset/*')
-        else:
+        elif 'test' == data_set_type:
             data_paths = glob.glob('../images/demo_test_dataset/*')
+
         data_list = []
         for path in data_paths:
             data_list.append(path)
@@ -91,12 +99,13 @@ class DRLSRNet(Chain):
 
 if __name__ == '__main__':
     #メインで呼ばれるときは学習Phaseで
-    print("Training Phase ...")
 
-    #引数 読み込み GPU 情報のみ
+    #引数 読み込み
+    #読み込む情報はgpu, 学習フェイズ,
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=-1)
-    parser.add_argument('--snapshot', type=int, default=None)
+    parser.add_argument('--phase', type=int, default=1)#1 -> pre-training, 0(not 1) -> fine-tuning
+    parser.add_argument('--snapshot', type=str, default=None)
     parser.add_argument('--model', action='store_true', default=False)
 
     args = parser.parse_args()
@@ -108,14 +117,23 @@ if __name__ == '__main__':
         drlsr.to_gpu()
 
     #データセット読み込み
-    train_data = ImageDataset(is_train=True)
-    test_data = ImageDataset(is_train=False)
+    #学習レートの設定
+    if args.phase:
+        print("#Pre-Training Phase")
+        train_data = ImageDataset(data_set_type='training')
+        lr = 0.1
+    else:
+        print("#Fine-Tuning Phase")
+        train_data = ImageDataset(data_set_type='tuning')
+        lr = 1.0
+    test_data = ImageDataset(data_set_type='test')
+
     #Trianer準備
     train_iter = chainer.iterators.MultiprocessIterator(train_data, TRAIN_BATCH_SIZE)
     test_iter = chainer.iterators.MultiprocessIterator(test_data, TEST_BATCH_SIZE, repeat=False, shuffle=False)
 
     #optimizer 準備
-    optimizer = optimizers.MomentumSGD(lr=1, momentum=0.9)
+    optimizer = optimizers.MomentumSGD(lr=lr, momentum=0.9)
     optimizer.setup(drlsr)
     optimizer.add_hook(chainer.optimizer.GradientClipping(0.1))
     optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
@@ -126,21 +144,29 @@ if __name__ == '__main__':
     trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu), trigger=(interval, 'iteration'))
     trainer.extend(extensions.dump_graph('main/loss'))
     trainer.extend(extensions.snapshot(), trigger=(interval, 'iteration'))
-    trainer.extend(extensions.snapshot_object(drlsr, 'model_iter_{.updater.iteration}'), trigger=(interval, 'iteration'))
-    trainer.extend(extensions.snapshot_object(optimizer, 'opt_iter_{.updater.iteration}'), trigger=(interval, 'iteration'))
     trainer.extend(extensions.LogReport(trigger=(interval, 'iteration')))
     trainer.extend(extensions.observe_lr(), trigger=(interval, 'iteration'))
     trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss', 'lr']), trigger=(interval, 'iteration'))
     trainer.extend(extensions.ProgressBar(update_interval=10))
 
     if args.snapshot:
-        serializers.load_npz('./result/snapshot_iter_' +str(args.snapshot) , trainer)
-    if args.model:
-        serializers.load_npz('./result/model_firsttraining.npz', drlsr)
-        #serializers.load_npz('./result/optimizer_final_test64.npz', optimizer)
-    trainer.run()
+        if args.phase:
+            #pre training
+            serializers.load_npz('./result/snapshot_iter_' +str(args.snapshot) , trainer)
+        else:
+            #fine tuning
+            serializers.load_npz('./result/snapshot_iter_' +str(args.snapshot) , trainer)
+    elif not args.phase:
+        #not snapshot and not pre(finetune) -> プレの最終ファイル読み込みが必要
+        serializers.load_npz('./result/model_pre_training.npz', drlsr)
 
-    chainer.serializers.save_npz('result/model_finetuning.npz', drlsr)
-    #chainer.serializers.save_npz('result/optimizer_firsttraining.npz', optimizer)
-    #chainer.serializers.save_npz('result/trainer_firsttraining.npz', trainer)
-    print('complete')
+    print("#Start Learning")
+    trainer.run()
+    print("#Saving model.")
+
+    if args.phase:
+        chainer.serializers.save_npz('result/model_pre_training.npz', drlsr)
+    else:
+        chainer.serializers.save_npz('result/model_fine_tuning.npz', drlsr)
+
+    print('#Completed')
