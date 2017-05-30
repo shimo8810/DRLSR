@@ -1,6 +1,7 @@
 import numpy as np
 import chainer
 import os
+from os import path
 from chainer import cuda, Function, gradient_check, \
                     Variable, optimizers, serializers, utils, \
                     Link, Chain, ChainList
@@ -14,6 +15,8 @@ import cv2
 import sys
 import cv2
 import glob
+
+APP_ROOT = path.normpath(path.join(path.dirname(path.abspath(__file__)), '../'))
 
 #parameter
 #Train バッチサイズ
@@ -157,10 +160,10 @@ if __name__ == '__main__':
     if args.snapshot:
         if args.phase:
             #pre training
-            serializers.load_npz('./result/snapshot_iter_' +str(args.snapshot) , trainer)
+            serializers.load_npz(path.join(APP_ROOT ,args.snapshot), trainer)
         else:
             #fine tuning
-            serializers.load_npz('./result/snapshot_iter_' +str(args.snapshot) , trainer)
+            serializers.load_npz(path.join(APP_ROOT, args.snapshot) , trainer)
     elif not args.phase:
         #not snapshot and not pre(finetune) -> プレの最終ファイル読み込みが必要
         serializers.load_npz('./result/model_pre_training.npz', drlsr)

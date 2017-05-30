@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import glob
 import DRLSR
+import argparse
 
 def PSNR(image1, image2):
     mse = np.sum((image1.astype(np.float32) - image2.astype(np.float32)) ** 2) / (image1.shape[0] * image1.shape[1])
@@ -11,14 +12,27 @@ def PSNR(image1, image2):
 
 
 if __name__ == '__main__':
+    #引数設定
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--eval', action='store_true', default=False)
+    parser.add_argument('--model', type=str, default=None)
+    parser.add_argument('--input', type=str, default=None)
+    args.parser.parse_args()
+
     up_scale = 3
     #モデル読み込み
     model = DRLSR.DRLSRNet()
-    serializers.load_npz("result/model_final_test64.npz", model)
+    if not model:
+        serializers.load_npz("result/model_final_test64.npz", model)
+    else:
+        serializers.load_npz(args.model, model)
     model.is_train = False
 
     #画像読み込み
-    image = '../images/Set16/lenna.bmp'
+    if not args.input:
+        image = '../images/Set16/lenna.bmp'
+    else:
+        image = args.input
     image = cv2.imread(image).astype(np.float32)
     #画像サイズ crop
     size = np.array(image.shape) - np.array(image.shape) % up_scale
