@@ -91,14 +91,9 @@ class DRLSRNet(Chain):
         h = F.relu(self.conv4(h))
         h = h + x
 
-        if self.is_train:
-            #Training Phase
-            self.loss = F.mean_squared_error(h, t)
-            chainer.report({'loss': self.loss}, self)
-            return self.loss
-        else:
-            print("SR Phase")
-            return h
+        self.loss = F.mean_squared_error(h, t)
+        chainer.report({'loss': self.loss}, self)
+        return self.loss
 
 if __name__ == '__main__':
     #メインで呼ばれるときは学習Phaseで
