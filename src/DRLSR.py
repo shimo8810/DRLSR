@@ -38,22 +38,29 @@ class ImageDataset(chainer.dataset.DatasetMixin):
         '''
         if 'training' == data_set_type:
             data_paths = glob.glob('../images/demo_train_dataset/*')
+            data_path = '../images/DataSet/91_images.npy'
         elif 'tuning' == data_set_type:
             data_paths = glob.glob('../images/general_train_dataset/*')
         elif 'test' == data_set_type:
             data_paths = glob.glob('../images/demo_test_dataset/*')
+            data_path = '../images/DataSet/test16.npy'
 
-        data_list = []
-        for path in data_paths:
-            data_list.append(path)
-        self.data_list = data_list
+        # data_list = []
+        # for path in data_paths:
+        #     data_list.append(path)
+        # self.data_list = data_list
+        self.data = np.load(data_path)
+        self.length = self.data.shape[0]
+        print("#read" + data_set_type)
 
     def __len__(self):
-        return len(self.data_list)
+        return self.length
 
     def get_example(self, i):
-        image_input, image_label = np.load(self.data_list[i])
+        image_input, image_label = self.data[i]
         return image_input, image_label
+        # image_input, image_label = np.load(self.data_list[i])
+        # return image_input, image_label
 
 class DRLSRNet(Chain):
     """
@@ -61,19 +68,18 @@ class DRLSRNet(Chain):
     """
     def __init__(self):
         w_init = chainer.initializers.HeNormal()
-        super(DRLSRNet, self).__init__(
-            conv1_3 = L.Convolution2D(1, 8, ksize=3, stride=1, pad=1, bias=0, initialW=w_init),
-            conv1_5 = L.Convolution2D(1, 8, ksize=5, stride=1, pad=2, bias=0, initialW=w_init),
-            conv1_9 = L.Convolution2D(1, 8, ksize=9, stride=1, pad=4, bias=0, initialW=w_init),
-            conv2 = L.Convolution2D(24, 16, ksize=1, stride=1, pad=0, bias=0, initialW=w_init),
-            conv22= L.Convolution2D(16, 16, ksize=3, stride=1, pad=1, bias=0, initialW=w_init),
-            conv23= L.Convolution2D(16, 16, ksize=1, stride=1, pad=0, bias=0, initialW=w_init),
-            conv3_3 = L.Convolution2D(16, 8, ksize=3, stride=1, pad=1, bias=0, initialW=w_init),
-            conv3_5 = L.Convolution2D(16, 8, ksize=5, stride=1, pad=2, bias=0, initialW=w_init),
-            conv3_9 = L.Convolution2D(16, 8, ksize=9, stride=1, pad=4, bias=0, initialW=w_init),
-            conv4 = L.Convolution2D(24, 1, ksize=1, stride=1, pad=0, bias=0, initialW=w_init)
-        )
-        self.is_train = True
+        super(DRLSRNet, self).__init__()
+        with self.init_scope():
+            self.conv1_3 = L.Convolution2D(1, 8, ksize=3, stride=1, pad=1, initialW=w_init, initial_bias=0)
+            self.conv1_5 = L.Convolution2D(1, 8, ksize=5, stride=1, pad=2, initialW=w_init, initial_bias=0)
+            self.conv1_9 = L.Convolution2D(1, 8, ksize=9, stride=1, pad=4, initialW=w_init, initial_bias=0)
+            self.conv2 = L.Convolution2D(24, 16, ksize=1, stride=1, pad=0, initialW=w_init, initial_bias=0)
+            self.conv22= L.Convolution2D(16, 16, ksize=3, stride=1, pad=1, initialW=w_init, initial_bias=0)
+            self.conv23= L.Convolution2D(16, 16, ksize=1, stride=1, pad=0, initialW=w_init, initial_bias=0)
+            self.conv3_3 = L.Convolution2D(16, 8, ksize=3, stride=1, pad=1, initialW=w_init, initial_bias=0)
+            self.conv3_5 = L.Convolution2D(16, 8, ksize=5, stride=1, pad=2, initialW=w_init, initial_bias=0)
+            self.conv3_9 = L.Convolution2D(16, 8, ksize=9, stride=1, pad=4, initialW=w_init, initial_bias=0)
+            self.conv4 = L.Convolution2D(24, 1, ksize=1, stride=1, pad=0, initialW=w_init, initial_bias=0)
 
     def __call__(self, x, t):
         #forward network
@@ -89,11 +95,13 @@ class DRLSRNet(Chain):
                       F.relu(self.conv3_5(h)), \
                       F.relu(self.conv3_9(h))), axis=1)
         h = F.relu(self.conv4(h))
-        h = h + x
-
-        self.loss = F.mean_squared_error(h, t)
+        #return  F.mean_squared_error(h + x, t)
+        self.loss = F.mean_squared_error(h + x, t)
         chainer.report({'loss': self.loss}, self)
         return self.loss
+        #return h + x
+        # h = h + x
+        # return h
 
 if __name__ == '__main__':
     #メインで呼ばれるときは学習Phaseで
@@ -124,7 +132,7 @@ if __name__ == '__main__':
     if args.phase:
         print("#Pre-Training Phase")
         train_data = ImageDataset(data_set_type='training')
-        lr = 0.1
+        lr = 0.01
     else:
         print("#Fine-Tuning Phase")
         train_data = ImageDataset(data_set_type='tuning')
@@ -132,24 +140,24 @@ if __name__ == '__main__':
     test_data = ImageDataset(data_set_type='test')
 
     #Trianer準備
-    train_iter = chainer.iterators.MultiprocessIterator(train_data, TRAIN_BATCH_SIZE)
-    test_iter = chainer.iterators.MultiprocessIterator(test_data, TEST_BATCH_SIZE, repeat=False, shuffle=False)
+    train_iter = chainer.iterators.SerialIterator(train_data, TRAIN_BATCH_SIZE)
+    test_iter = chainer.iterators.SerialIterator(test_data, TEST_BATCH_SIZE, repeat=False, shuffle=False)
 
     #optimizer 準備
     optimizer = optimizers.MomentumSGD(lr=lr, momentum=0.9)
     optimizer.setup(drlsr)
-    optimizer.add_hook(chainer.optimizer.GradientClipping(0.1))
-    optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
+    # optimizer.add_hook(chainer.optimizer.GradientClipping(0.1))
+    # optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
 
     #Trainer 準備
     updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
     trainer = training.Trainer(updater, (MAX_ITER, 'iteration'), out="result")
-    trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu), trigger=(interval, 'iteration'))
-    trainer.extend(extensions.dump_graph('main/loss'))
-    trainer.extend(extensions.snapshot(), trigger=(interval, 'iteration'))
-    trainer.extend(extensions.LogReport(trigger=(interval, 'iteration')))
-    trainer.extend(extensions.observe_lr(), trigger=(interval, 'iteration'))
-    trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss', 'lr']), trigger=(interval, 'iteration'))
+    # trainer.extend(extensions.Evaluator(test_iter, drlsr, device=args.gpu), trigger=(interval, 'iteration'))
+    #trainer.extend(extensions.dump_graph('main/loss'))
+    # trainer.extend(extensions.snapshot(), trigger=(interval, 'iteration'))
+    # trainer.extend(extensions.LogReport(trigger=(interval, 'iteration')))
+    # trainer.extend(extensions.observe_lr(), trigger=(interval, 'iteration'))
+    # trainer.extend(extensions.PrintReport(['epoch', 'iteration', 'main/loss', 'validation/main/loss', 'lr']), trigger=(interval, 'iteration'))
     trainer.extend(extensions.ProgressBar(update_interval=10))
 
     if args.snapshot:
