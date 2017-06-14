@@ -38,7 +38,7 @@ class ImageDataset(chainer.dataset.DatasetMixin):
         '''
         if 'training' == data_set_type:
             data_paths = glob.glob('../images/demo_train_dataset/*')
-            data_path = '../images/DataSet/91_images.npy'
+            data_path = '../data_set/yang91_input.npy'
         elif 'tuning' == data_set_type:
             data_paths = glob.glob('../images/general_train_dataset/*')
         elif 'test' == data_set_type:

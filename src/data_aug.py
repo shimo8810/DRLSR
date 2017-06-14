@@ -1,15 +1,19 @@
 #画像データセットを増幅させる 回転 縮小
 import os
+import json
 import numpy as np
 import cv2
 import sys
 from os import path
 
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
 # 最初の91枚の画像をカサ増しする
 #91-iamgeのパス
-image_path = '../images/General_100/'
+image_path = config['path_mini']
 #保存用ディレクトリのパス
-save_path = '../images/general_100_aug/'
+save_path = config['path_mini_aug']
 image_names = os.listdir(image_path)
 length = len(image_names)
 count = 0
@@ -18,7 +22,7 @@ for i in image_names:
     sys.stdout.write("\r images :{}/{}, {}％".format(count, length, (count*100)//length))
     sys.stdout.flush()
     #画像パス
-    image_name = image_path + str(i)
+    image_name = path.join(image_path,i)
     #画像ファイル
     image = cv2.imread(image_name)
     for scale in range(6, 11):
@@ -32,7 +36,7 @@ for i in image_names:
         i_list.append(scaled_image)
         angle_list = [90,180,270, 0]
         for j in range(len(angle_list)):
-                buf_name = path.abspath(save_path + "{}_scale_{}_angle_{}.bmp".format(i.split(".")[0], int(scale*10), angle_list[j]))
-                hog = cv2.imwrite(buf_name, i_list[j])
-                print(hog)
+                buf_name = "{}_scale_{}_angle_{}.bmp".format(i.split(".")[0], int(scale*10), angle_list[j])
+                buf_path = path.join(save_path, buf_name)
+                hog = cv2.imwrite(buf_path, i_list[j])
 print("\ncomplete!")
