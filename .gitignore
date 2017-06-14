@@ -95,3 +95,5 @@ src/result/
 
 _*.py
 *.h5
+data_set/
+config.json
