@@ -19,8 +19,8 @@ if '__main__' == __name__:
     STRIDE = 11
 
     #path 情報
-    image_path = config['path_mini_aug']
-    save_path = config['path_mini_npy']
+    image_path = config['path_general100_aug']
+    save_path = config['path_general100_npy']
     image_paths = os.listdir(image_path)
 
 
@@ -55,8 +55,8 @@ if '__main__' == __name__:
         #各画像を入力サイズに切り分ける
         for x in range(0, height - SIZE_INPUT + 1, STRIDE):
             for y in range(0, width - SIZE_INPUT + 1, STRIDE):
-                subim_input = (image_input[np.newaxis, np.newaxis, x:x+SIZE_INPUT, y:y+SIZE_INPUT].astype(np.float64)) / 255.0
-                subim_label = (image_label[np.newaxis, np.newaxis, x:x+SIZE_INPUT, y:y+SIZE_INPUT].astype(np.float64)) / 255.0
+                subim_input = (image_input[np.newaxis, np.newaxis, x:x+SIZE_INPUT, y:y+SIZE_INPUT].astype(np.float32)) / 255.0
+                subim_label = (image_label[np.newaxis, np.newaxis, x:x+SIZE_INPUT, y:y+SIZE_INPUT].astype(np.float32)) / 255.0
                 #雑魚セクション
                 _data = np.concatenate([subim_input, subim_label], axis=0)
                 sp = os.path.join(save_path, "{}{}.npy".format(str(i.split('.')[0]), str(c)))
